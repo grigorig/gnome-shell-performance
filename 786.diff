@@ -1,0 +1,32 @@
+diff --git a/js/ui/closeDialog.js b/js/ui/closeDialog.js
+index 63a0bcfcf8d9b14d97dccda9b7b9f11649048838..2fda4566aab76e131ad6e28394d93a40e34d9f10 100644
+--- a/js/ui/closeDialog.js
++++ b/js/ui/closeDialog.js
+@@ -204,7 +204,11 @@ var CloseDialog = GObject.registerClass({
+     }
+ 
+     vfunc_focus() {
+-        if (this._dialog)
+-            this._dialog.grab_key_focus();
++        if (!this._dialog)
++            return;
++
++        const keyFocus = global.stage.key_focus;
++        if (!keyFocus || !this._dialog.contains(keyFocus))
++            this._dialog.initialKeyFocus.grab_key_focus();
+     }
+ });
+diff --git a/js/ui/main.js b/js/ui/main.js
+index 94c43dcce026fd3031069b2ad47fa9d80074de56..3e3338b7362d98466445f4f15509e643690e0697 100644
+--- a/js/ui/main.js
++++ b/js/ui/main.js
+@@ -611,7 +611,8 @@ function popModal(actor, timestamp) {
+         if (record.prevFocus)
+             record.prevFocus.disconnect(record.prevFocusDestroyId);
+         actionMode = record.actionMode;
+-        global.stage.set_key_focus(record.prevFocus);
++        if (global.stage.key_focus === record.actor)
++            global.stage.set_key_focus(record.prevFocus);
+     } else {
+         // If we have:
+         //     global.stage.set_focus(a);

@@ -1,0 +1,14 @@
+diff --git a/src/st/st-icon.c b/src/st/st-icon.c
+index c9d7a85e52219348dec0da45adacd2279cd8c04c..c43d7c91bd3c9e5f7442787a49f358081c32ff40 100644
+--- a/src/st/st-icon.c
++++ b/src/st/st-icon.c
+@@ -359,7 +359,8 @@ st_icon_update_shadow_pipeline (StIcon *icon)
+       ClutterActorBox box;
+       float width, height;
+ 
+-      clutter_actor_get_allocation_box (CLUTTER_ACTOR (icon), &box);
++      clutter_actor_get_allocation_box (CLUTTER_ACTOR (priv->icon_texture),
++                                        &box);
+       clutter_actor_box_get_size (&box, &width, &height);
+ 
+       if (priv->shadow_pipeline == NULL ||

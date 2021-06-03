@@ -2,7 +2,7 @@
 
 Name:           gnome-shell
 Version:        40.1
-Release:        1%{?dist}
+Release:        100%{?dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+
@@ -11,6 +11,18 @@ Source0: http://download.gnome.org/sources/gnome-shell/40/%{name}-%{tarball_vers
 
 # Replace Epiphany with Firefox in the default favourite apps list
 Patch1: gnome-shell-favourite-apps-firefox.patch
+
+# WallClock performance
+Patch2: 923.diff
+
+# Bugfixes
+# Patch3: 786.diff
+# Patch4: 1440.diff
+Patch5: 536.diff
+
+# Overview render performance
+Patch6: 1862.diff
+Patch7: 1869.diff
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
@@ -232,6 +244,10 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %{_mandir}/man1/gnome-shell.1*
 
 %changelog
+* Thu Jun 03 2021 Grigori Goronzy <greg@kinoho.net> - 40.1-100
+- Add performance patches
+- Add bugfixes
+
 * Thu May 13 2021 Florian Müllner <fmuellner@redhat.com> - 40.1-1
 - Update to 40.1
 
