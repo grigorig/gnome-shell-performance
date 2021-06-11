@@ -22,7 +22,6 @@ Patch5: 536.diff
 
 # Overview render performance
 Patch6: 1862.diff
-Patch7: 1869.diff
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
@@ -246,6 +245,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %changelog
 * Fri Jun 11 2021 Grigori Goronzy <greg@kinoho.net> - 40.2-100
 - Merge upstream
+- Drop !1869 (upstreamed)
 
 * Thu Jun 10 2021 Florian Müllner <fmuellner@redhat.com> - 40.2-1
 - Update to 40.2
