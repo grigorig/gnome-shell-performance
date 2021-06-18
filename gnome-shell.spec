@@ -2,7 +2,7 @@
 
 Name:           gnome-shell
 Version:        40.2
-Release:        100%{?dist}
+Release:        101%{?dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+
@@ -22,6 +22,9 @@ Patch5: 536.diff
 
 # Overview render performance
 Patch6: 1862.diff
+
+# Faster app grid rendering (no offscreening)
+Patch7: 1884.diff
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
@@ -243,6 +246,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %{_mandir}/man1/gnome-shell.1*
 
 %changelog
+* Fri Jun 18 2021 Grigori Goronzy <greg@kinoho.net> - 40.2-101
+- Add !1884
+
 * Fri Jun 11 2021 Grigori Goronzy <greg@kinoho.net> - 40.2-100
 - Merge upstream
 - Drop !1869 (upstreamed)
