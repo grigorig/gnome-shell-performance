@@ -1,103 +1,48 @@
-diff --git a/data/theme/gnome-shell-sass/widgets/_window-picker.scss b/data/theme/gnome-shell-sass/widgets/_window-picker.scss
-index b3b93f291a1c01653f922abed428df0a3e376110..fa3f19194502ff35f8331b88eeaf54cb972f46e1 100644
---- a/data/theme/gnome-shell-sass/widgets/_window-picker.scss
-+++ b/data/theme/gnome-shell-sass/widgets/_window-picker.scss
-@@ -48,6 +48,5 @@ $window_close_button_padding: 3px;
- .workspace-background {
-   // keep in sync with BACKGROUND_CORNER_RADIUS_PIXELS in workspace.js
-   border-radius: 30px;
--  background-color: $osd_bg_color;
-   box-shadow: 0 4px 16px 4px transparentize(darken($osd_bg_color, 30%), 0.7);
- }
+diff --git a/js/ui/workspace.js b/js/ui/workspace.js
+index 75efe4d992e41859d86fd6b35a26e7b7afc1ee4c..d4568dc1e8eff5e57a8a38da06423c1b64c1b4f1 100644
+--- a/js/ui/workspace.js
++++ b/js/ui/workspace.js
+@@ -921,6 +921,7 @@ class WorkspaceBackground extends St.Widget {
+             layout_manager: new Clutter.BinLayout(),
+             x_expand: true,
+             y_expand: true,
++            always_occluded: true,
+         });
+ 
+         this._monitorIndex = monitorIndex;
 diff --git a/src/st/st-theme-node-drawing.c b/src/st/st-theme-node-drawing.c
-index f839d990ed93cb9820485c4df641b30d1e6c9e61..80ade9319792864734c6252081718d626458da2d 100644
+index b32c76be2fb754e77619e0ca96223e89d087d8ac..f264f383b2648418800d7f6506faaff8ae072afc 100644
 --- a/src/st/st-theme-node-drawing.c
 +++ b/src/st/st-theme-node-drawing.c
-@@ -51,6 +51,11 @@ typedef struct {
-   float          resource_scale;
- } StCornerSpec;
- 
-+typedef enum {
-+  ST_PAINT_BORDERS_MODE_COLOR,
-+  ST_PAINT_BORDERS_MODE_SILHOUETTE
-+} StPaintBordersMode;
-+
- static void
- elliptical_arc (cairo_t *cr,
-                 double   x_center,
-@@ -409,7 +414,12 @@ st_theme_node_lookup_corner (StThemeNode    *node,
-   if (corner.color.alpha == 0 &&
-       corner.border_color_1.alpha == 0 &&
-       corner.border_color_2.alpha == 0)
--    return NULL;
-+    {
-+      if (node->box_shadow == NULL)
-+        return NULL;
-+      else  /* We still need a corner texture to render the box-shadow */
-+        corner.color = (ClutterColor) {0, 0, 0, 255};
-+    }
- 
-   key = corner_to_string (&corner);
-   texture = st_texture_cache_load (cache, key, ST_TEXTURE_CACHE_POLICY_FOREVER, load_corner, &corner, NULL);
-@@ -1355,6 +1365,7 @@ st_theme_node_prerender_background (StThemeNode *node,
- static void st_theme_node_paint_borders (StThemeNodePaintState *state,
-                                          CoglFramebuffer       *framebuffer,
-                                          const ClutterActorBox *box,
-+                                         StPaintBordersMode     mode,
-                                          guint8                 paint_opacity);
- 
- void
-@@ -1580,7 +1591,7 @@ st_theme_node_render_resources (StThemeNodePaintState *state,
-         state->box_shadow_pipeline = _st_create_shadow_pipeline (box_shadow_spec,
-                                                                  state->prerendered_texture,
-                                                                  state->resource_scale);
--      else if (node->background_color.alpha > 0 || has_border)
-+      else
-         st_theme_node_prerender_shadow (state);
-     }
- 
-@@ -1697,6 +1708,7 @@ static void
- st_theme_node_paint_borders (StThemeNodePaintState *state,
-                              CoglFramebuffer       *framebuffer,
-                              const ClutterActorBox *box,
-+                             StPaintBordersMode     mode,
-                              guint8                 paint_opacity)
+@@ -1485,7 +1485,8 @@ st_theme_node_render_resources (StThemeNodePaintState *state,
+                                 StThemeNode           *node,
+                                 float                  width,
+                                 float                  height,
+-                                float                  resource_scale)
++                                float                  resource_scale,
++                                gboolean               always_occluded)
  {
-   StThemeNode *node = state->node;
-@@ -1708,6 +1720,7 @@ st_theme_node_paint_borders (StThemeNodePaintState *state,
-   int corner_id, side_id;
-   ClutterColor border_color;
-   guint8 alpha;
-+  gboolean corners_are_transparent;
+   gboolean has_border;
+   gboolean has_border_radius;
+@@ -1505,6 +1506,7 @@ st_theme_node_render_resources (StThemeNodePaintState *state,
+   state->alloc_width = width;
+   state->alloc_height = height;
+   state->resource_scale = resource_scale;
++  state->always_occluded = always_occluded;
  
+   _st_theme_node_ensure_background (node);
+   _st_theme_node_ensure_geometry (node);
+@@ -1722,6 +1724,9 @@ st_theme_node_paint_borders (StThemeNodePaintState *state,
+   guint8 alpha;
+   gboolean corners_are_transparent;
+ 
++  if (mode == ST_PAINT_BORDERS_MODE_COLOR && state->always_occluded)
++    return;
++
    width = box->x2 - box->x1;
    height = box->y2 - box->y1;
-@@ -1802,8 +1815,12 @@ st_theme_node_paint_borders (StThemeNodePaintState *state,
-         }
-     }
  
-+  corners_are_transparent = mode == ST_PAINT_BORDERS_MODE_COLOR &&
-+                            node->background_color.alpha == 0 &&
-+                            node->border_color[0].alpha == 0;
-+
-   /* corners */
--  if (max_border_radius > 0 && paint_opacity > 0)
-+  if (max_border_radius > 0 && paint_opacity > 0 && !corners_are_transparent)
-     {
-       for (corner_id = 0; corner_id < 4; corner_id++)
-         {
-@@ -1852,7 +1869,9 @@ st_theme_node_paint_borders (StThemeNodePaintState *state,
-     }
- 
-   /* background color */
--  alpha = paint_opacity * node->background_color.alpha / 255;
-+  alpha = mode == ST_PAINT_BORDERS_MODE_SILHOUETTE ?
-+          255 :
-+          paint_opacity * node->background_color.alpha / 255;
-   if (alpha > 0)
-     {
-       st_theme_node_ensure_color_pipeline (node);
-@@ -2159,16 +2178,21 @@ st_theme_node_paint_sliced_shadow (StThemeNodePaintState *state,
+@@ -2178,16 +2183,22 @@ st_theme_node_paint_sliced_shadow (StThemeNodePaintState *state,
        rectangles[idx++] = s_bottom;
      }
  
@@ -109,7 +54,8 @@ index f839d990ed93cb9820485c4df641b30d1e6c9e61..80ade9319792864734c6252081718d62
 +  /* Center middle is visible? */
 +  if (paint_opacity < 255 ||
 +      xoffset > shadow_blur_radius || left < 0 ||
-+      yoffset > shadow_blur_radius || top < 0)
++      yoffset > shadow_blur_radius || top < 0 ||
++      !state->always_occluded)
 +    {
 +      rectangles[idx++] = left;
 +      rectangles[idx++] = top;
@@ -128,21 +74,164 @@ index f839d990ed93cb9820485c4df641b30d1e6c9e61..80ade9319792864734c6252081718d62
  
    if (xend > right)
      {
-@@ -2307,7 +2331,7 @@ st_theme_node_prerender_shadow (StThemeNodePaintState *state)
-                               state->resource_scale, 1);
-       cogl_framebuffer_clear4f (framebuffer, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
+@@ -2609,7 +2620,7 @@ st_theme_node_paint (StThemeNode           *node,
+           fabsf (resource_scale - state->resource_scale) < FLT_EPSILON)
+         st_theme_node_paint_state_copy (state, &node->cached_state);
+       else
+-        st_theme_node_render_resources (state, node, width, height, resource_scale);
++        st_theme_node_render_resources (state, node, width, height, resource_scale, state->always_occluded);
  
--      st_theme_node_paint_borders (state, framebuffer, &box, 0xFF);
-+      st_theme_node_paint_borders (state, framebuffer, &box, ST_PAINT_BORDERS_MODE_SILHOUETTE, 0xFF);
- 
-       state->box_shadow_pipeline = _st_create_shadow_pipeline (st_theme_node_get_box_shadow (node),
-                                                                buffer, state->resource_scale);
-@@ -2663,7 +2687,7 @@ st_theme_node_paint (StThemeNode           *node,
+       node->rendered_once = TRUE;
      }
-   else
-     {
--      st_theme_node_paint_borders (state, framebuffer, box, paint_opacity);
-+      st_theme_node_paint_borders (state, framebuffer, box, ST_PAINT_BORDERS_MODE_COLOR, paint_opacity);
-     }
+@@ -2794,6 +2805,7 @@ st_theme_node_paint_state_init (StThemeNodePaintState *state)
+   state->alloc_height = 0;
+   state->resource_scale = -1;
+   state->node = NULL;
++  state->always_occluded = FALSE;
+   state->box_shadow_pipeline = NULL;
+   state->prerendered_texture = NULL;
+   state->prerendered_pipeline = NULL;
+@@ -2818,6 +2830,7 @@ st_theme_node_paint_state_copy (StThemeNodePaintState *state,
+   state->alloc_width = other->alloc_width;
+   state->alloc_height = other->alloc_height;
+   state->resource_scale = other->resource_scale;
++  state->always_occluded = other->always_occluded;
+   state->box_shadow_width = other->box_shadow_width;
+   state->box_shadow_height = other->box_shadow_height;
  
-   st_theme_node_paint_outline (node, framebuffer, box, paint_opacity);
+diff --git a/src/st/st-theme-node.h b/src/st/st-theme-node.h
+index 520e29f4f4fde972e4d02e4454ad65e8bf12434c..9f9dd8e9187db35e2895f9bc7fd1689f19894a75 100644
+--- a/src/st/st-theme-node.h
++++ b/src/st/st-theme-node.h
+@@ -169,6 +169,8 @@ struct _StThemeNodePaintState {
+ 
+   float resource_scale;
+ 
++  gboolean always_occluded;
++
+   CoglPipeline *box_shadow_pipeline;
+   CoglPipeline *prerendered_texture;
+   CoglPipeline *prerendered_pipeline;
+diff --git a/src/st/st-widget.c b/src/st/st-widget.c
+index 644b8e25af0536947a5d8e8f01632ad0bc45c91e..af93df51c57ab6dad70cf80aab09af64ee591bb8 100644
+--- a/src/st/st-widget.c
++++ b/src/st/st-widget.c
+@@ -72,6 +72,7 @@ struct _StWidgetPrivate
+   guint track_hover : 1;
+   guint hover : 1;
+   guint can_focus : 1;
++  guint always_occluded : 1;
+ 
+   gulong texture_file_changed_id;
+   guint update_child_styles_id;
+@@ -114,6 +115,7 @@ enum
+   PROP_LABEL_ACTOR,
+   PROP_ACCESSIBLE_ROLE,
+   PROP_ACCESSIBLE_NAME,
++  PROP_ALWAYS_OCCLUDED,
+ 
+   N_PROPS
+ };
+@@ -197,6 +199,10 @@ st_widget_set_property (GObject      *gobject,
+       st_widget_set_accessible_name (actor, g_value_get_string (value));
+       break;
+ 
++    case PROP_ALWAYS_OCCLUDED:
++      st_widget_set_always_occluded (actor, g_value_get_boolean (value));
++      break;
++
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
+       break;
+@@ -250,6 +256,10 @@ st_widget_get_property (GObject    *gobject,
+       g_value_set_string (value, priv->accessible_name);
+       break;
+ 
++    case PROP_ALWAYS_OCCLUDED:
++      g_value_set_boolean (value, priv->always_occluded);
++      break;
++
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
+       break;
+@@ -289,8 +299,12 @@ static StThemeNodePaintState *
+ current_paint_state (StWidget *widget)
+ {
+   StWidgetPrivate *priv = st_widget_get_instance_private (widget);
++  StThemeNodePaintState *state;
+ 
+-  return &priv->paint_states[priv->current_paint_state];
++  state = &priv->paint_states[priv->current_paint_state];
++  state->always_occluded = st_widget_get_always_occluded (widget);
++
++  return state;
+ }
+ 
+ static void
+@@ -1013,6 +1027,20 @@ st_widget_class_init (StWidgetClass *klass)
+                           NULL,
+                           ST_PARAM_READWRITE);
+ 
++  /**
++   * StWidget:always-occluded
++   *
++   * Whether or not the widget is always covered by other rendering (and so
++   * backgrounds and shadow-centers need not be rendered). This is useful for
++   * when you only need to see the shadow penumbra.
++   */
++  props[PROP_ALWAYS_OCCLUDED] =
++     g_param_spec_boolean ("always-occluded",
++                           "Always occluded",
++                           "Whether the widget's allocation box is covered by other rendering",
++                           FALSE,
++                           ST_PARAM_READWRITE);
++
+   g_object_class_install_properties (gobject_class, N_PROPS, props);
+ 
+   /**
+@@ -1981,6 +2009,31 @@ st_widget_get_can_focus (StWidget *widget)
+   return ST_WIDGET_PRIVATE (widget)->can_focus;
+ }
+ 
++void
++st_widget_set_always_occluded (StWidget *widget,
++                               gboolean  always_occluded)
++{
++  StWidgetPrivate *priv;
++
++  g_return_if_fail (ST_IS_WIDGET (widget));
++
++  priv = st_widget_get_instance_private (widget);
++
++  if (priv->always_occluded != always_occluded)
++    {
++      priv->always_occluded = always_occluded;
++      g_object_notify_by_pspec (G_OBJECT (widget), props[PROP_ALWAYS_OCCLUDED]);
++    }
++}
++
++gboolean
++st_widget_get_always_occluded (StWidget *widget)
++{
++  g_return_val_if_fail (ST_IS_WIDGET (widget), FALSE);
++
++  return ST_WIDGET_PRIVATE (widget)->always_occluded;
++}
++
+ /**
+  * st_widget_popup_menu:
+  * @self: A #StWidget
+diff --git a/src/st/st-widget.h b/src/st/st-widget.h
+index f00c98733f67cfc7246d6a705022dfd57e07a66f..4558742a7a77de13e4ab1adc671b0d922a364108 100644
+--- a/src/st/st-widget.h
++++ b/src/st/st-widget.h
+@@ -128,6 +128,9 @@ void                  st_widget_ensure_style              (StWidget        *widg
+ void                  st_widget_set_can_focus             (StWidget        *widget,
+                                                            gboolean         can_focus);
+ gboolean              st_widget_get_can_focus             (StWidget        *widget);
++void                  st_widget_set_always_occluded       (StWidget        *widget,
++                                                           gboolean         always_occluded);
++gboolean              st_widget_get_always_occluded       (StWidget        *widget);
+ gboolean              st_widget_navigate_focus            (StWidget        *widget,
+                                                            ClutterActor    *from,
+                                                            StDirectionType  direction,
