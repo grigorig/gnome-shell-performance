@@ -1,8 +1,8 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:           gnome-shell
-Version:        40.2
-Release:        101%{?dist}
+Version:        40.3
+Release:        100%{?dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+
@@ -146,6 +146,8 @@ Recommends:     gnome-tour
 
 Provides:       desktop-notification-daemon = %{version}-%{release}
 Provides:       PolicyKit-authentication-agent = %{version}-%{release}
+Provides:       bundled(gvc)
+Provides:       bundled(libcroco) = 0.6.13
 
 %if 0%{?rhel}
 # In Fedora, fedora-obsolete-packages obsoletes caribou
@@ -246,6 +248,12 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %{_mandir}/man1/gnome-shell.1*
 
 %changelog
+* Tue Jul 20 2021 Grigori Goronzy <greg@kinoho.net> - 40.3-100
+- Merge upstream
+
+* Mon Jul 12 2021 Florian Müllner <fmuellner@redhat.com> - 40.3-1
+- Update to 40.3
+
 * Fri Jun 18 2021 Grigori Goronzy <greg@kinoho.net> - 40.2-101
 - Add !1884
 
