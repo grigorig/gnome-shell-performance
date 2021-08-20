@@ -1,7 +1,7 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:           gnome-shell
-Version:        40.3
+Version:        40.4
 Release:        100%{?dist}
 Summary:        Window management and application launching for GNOME
 
@@ -248,6 +248,12 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %{_mandir}/man1/gnome-shell.1*
 
 %changelog
+* Fri Aug 20 2021 Grigori Goronzy <greg@kinoho.net> - 40.4-100
+- Merge upstream
+
+* Wed Aug 18 1021 Florian Müllner <fmuellner@redhat.com> - 40.4-1
+- Update to 40.4
+
 * Tue Jul 20 2021 Grigori Goronzy <greg@kinoho.net> - 40.3-100
 - Merge upstream
 
