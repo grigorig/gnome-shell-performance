@@ -2,7 +2,7 @@
 
 Name:           gnome-shell
 Version:        40.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+
@@ -16,6 +16,8 @@ Patch1: gnome-shell-favourite-apps-firefox.patch
 # downstream patch to stop trying on configuration errors.
 Patch10005: 0001-gdm-Work-around-failing-fingerprint-auth.patch
 
+# Work around crashy tear down
+Patch11000: 0001-main-Leak-the-GJS-context-and-ShellGlobal.patch
 
 %define eds_version 3.33.1
 %define gnome_desktop_version 3.35.91
@@ -234,6 +236,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 %{_mandir}/man1/gnome-shell.1*
 
 %changelog
+* Wed Oct 06 2021 Jonas Ådahl <jadahl@redhat.com> - 40.5-2
+- Work around crashy tear down
+
 * Tue Sep 21 2021 Florian Müllner <fmuellner@redhat.com> - 40.5-1
 - Update to 40.5
 
