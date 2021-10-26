@@ -242,7 +242,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/evolution-calendar.de
 * Tue Sep 21 2021 Florian Müllner <fmuellner@redhat.com> - 40.5-1
 - Update to 40.5
 
-* Wed Aug 18 1021 Florian Müllner <fmuellner@redhat.com> - 40.4-1
+* Wed Aug 18 2021 Florian Müllner <fmuellner@redhat.com> - 40.4-1
 - Update to 40.4
 
 * Mon Jul 12 2021 Florian Müllner <fmuellner@redhat.com> - 40.3-1
